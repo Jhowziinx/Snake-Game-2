@@ -2,8 +2,10 @@
 import pygame
 from pygame.locals import *
 from sys import exit
-from random import randint, choice
+from random import randint, choice, shuffle
 from time import sleep
+from math import atan2, degrees, pi, cos, sin, sqrt
+
 
 pygame.init() #inicando a biblioteca
 
@@ -24,7 +26,7 @@ som_vitoria = pygame.mixer.Sound('vitoria.mp3')
 
 pygame.display.set_caption('Snake Game')
 
-neymar = pygame.image.load('eymar.png')
+
 
 width = 1280
 height = 720
@@ -42,8 +44,8 @@ vida_apple = 0
 escolha = 0
 life_drop = False
 apple_tamanho = 0
-awnser = 0
-
+answer = 0
+maca_verde_born = False
 
 paused = 0
 
@@ -53,14 +55,14 @@ y_snake = int(height/2)
 
 #fonte do contador
 font = pygame.font.SysFont('arial', 40, True, True)
-font2 = pygame.font.SysFont('arial', 27, True, True)
+font2 = pygame.font.SysFont('arial', 25, True, True)
 
 
 
 
 
 #valor inicial do contador
-points = 0
+points = 15
 quiz_feito = False
 fazendo_quiz = False
 testando = False
@@ -71,8 +73,6 @@ testando = False
 x_apple = randint(40, 1200)
 y_apple = randint(50,700)
 
-x_apple_green = randint(40, 1200)
-y_apple_green = randint(50, 700)
 
 x_troll_apple = randint(40, 1200)
 y_troll_apple = randint(50,700)
@@ -98,11 +98,13 @@ dead = False
 finish = False
 
 quizes = [
-    ['Qual o maior campeão da Copa do Mundo?', ['1-Brasil', '2-França', '3-Alemanha', '4-Itália']],
-    ['Qual a primeira Lei de Newton?', ['1-Inércia', '2-Princípio Fundamental da Dinâmica', '3-Lei da Ação e Reação', '4-Lei da Gravidade']],
-    ['Dois espelhos planos são alinhados, o ângulo que se forma é de 90°. Quantas imagens foram formadas?', ['a)3', 'b)4', 'c)2', 'd)7']],
-    ['A que temperatura a água ferve?', ['a) 100 ºC', 'b)-10ºC ', 'c)180 ºC', '0ºC']],
-    ['No período pré-colonial a atividade econômica que teve maior destaque foi:', ['a) Pau-Brasil', 'b) Mineração', 'c) Cana-de-açúcar', 'd) Café']]
+    ['Quem é o maior campeão da Copa do Mundo?', ['Brasil', 'França', 'Alemanha', 'Itália']],
+    ['Qual a primeira Lei de Newton?', ['Inércia', 'Princípio Fundamental da Dinâmica', 'Lei da Ação e Reação', 'Lei da Gravidade']],
+    ['Dois espelhos planos são alinhados, o ângulo que se forma é de 90°. Quantas imagens foram formadas?', ['3', '4', '2', '7']],
+    ['A que temperatura a água ferve?', ['100 ºC', '-10ºC ', '180 ºC', '0ºC']],
+    ['No período pré-colonial a atividade econômica que teve maior destaque foi:', ['Pau-Brasil', 'Mineração', 'Cana-de-açúcar', 'Café']],
+    ['Qual o nome dos dois filhos do Neymar?', ['Davi e Mavie', 'Rafa e Marcos', 'Eduardo e Jair Renan', 'Luan e Ylana']],
+    ['Qual dos seguintes não é considerado um recurso renovável?', ['Petróleo', 'Biomassa', 'Solar', 'Eólica']]
 
 ]
 
@@ -111,8 +113,6 @@ def x_y_apple():
     global x_apple, y_apple, x_apple_green, y_apple_green, x_troll_apple, y_troll_apple, x_life_apple, y_life_apple
     x_apple = randint(40 , 1200)
     y_apple = randint(50 , 700)
-    x_apple_green = randint(40, 1200)
-    y_apple_green = randint(50, 700)
     x_troll_apple = randint(40, 1200)
     y_troll_apple = randint(50, 700)
     
@@ -155,8 +155,8 @@ def increases_snake(snake_lista):
         
 
 def restart_game():
-    global points, first_length, x_snake, y_apple, y_snake, x_apple, snake_lista, head_list, dead, vel, x_apple_green, y_apple_green, vol, key_right, key_left, key_down, key_up, apple_tamanho, quiz_feito, fazendo_quiz, life, vida_apple, escolha, awnser, finish
-    points = 0
+    global points, first_length, x_snake, y_apple, y_snake, x_apple, snake_lista, head_list, dead, vel, x_apple_green, y_apple_green, vol, key_right, key_left, key_down, key_up, apple_tamanho, quiz_feito, fazendo_quiz, life, vida_apple, escolha, answer, finish, maca_verde_born
+    points = 15
     vel = 8
     first_length = 5
     x_snake = int(width/2)
@@ -180,7 +180,8 @@ def restart_game():
     life = 0
     vida_apple = 0
     escolha = 0
-    awnser = 0
+    answer = 0
+    maca_verde_born =False
 
 font3 = pygame.font.SysFont('arial', 30, True, True)
 msg_inicio = "WELCOME to the snake game! Press any key to continue!"
@@ -201,7 +202,6 @@ while inicio:
             pygame.display.update()
     ret_text2.center = (width//2, height//2)
     screen_inicio.blit(text_inicio, ret_text2)
-    screen_inicio.blit(neymar, (width//2, height//2))
     pygame.display.update()
 
 
@@ -301,7 +301,9 @@ while True:
         if not fazendo_quiz:
             quiz = choice(quizes)
             pergunta = quiz[0]
-            respostas = quiz[1]
+            respostas = [*quiz[1]]
+            resposta_certa = respostas[0]
+            shuffle(respostas)
             fazendo_quiz = True
         
         text = font2.render(pergunta, True, (0,0,0))
@@ -309,10 +311,10 @@ while True:
         text_rect.center = (width//2, height//2 - 200)
         screen.blit(text, text_rect)
 
-        text_resposta_1 = font2.render(respostas[0], True, (0,0,0))
-        text_resposta_2 = font2.render(respostas[1], True, (0,0,0))
-        text_resposta_3 = font2.render(respostas[2], True, (0,0,0))
-        text_resposta_4 = font2.render(respostas[3], True, (0,0,0))
+        text_resposta_1 = font2.render(f'1) {respostas[0]}', True, (0,0,0))
+        text_resposta_2 = font2.render(f'2) {respostas[1]}', True, (0,0,0))
+        text_resposta_3 = font2.render(f'3) {respostas[2]}', True, (0,0,0))
+        text_resposta_4 = font2.render(f'4) {respostas[3]}', True, (0,0,0))
         text_respostas_rect_1 = text_resposta_1.get_rect()
         text_respostas_rect_2 = text_resposta_2.get_rect()
         text_respostas_rect_3 = text_resposta_3.get_rect()
@@ -334,13 +336,25 @@ while True:
                     exit()
                 if event.type == KEYDOWN:
                     if event.key == K_1:
-                        apple_1(1)
+                        if resposta_certa == respostas[0]:
+                            apple_1(1)
+                        else:
+                            apple_1(2)
                     elif event.key == K_2:
-                        apple_1(2)
+                        if resposta_certa == respostas[1]:
+                            apple_1(1)
+                        else:
+                            apple_1(2)
                     elif event.key == K_3:
-                        apple_1(2)
+                        if resposta_certa == respostas[2]:
+                            apple_1(1)
+                        else:
+                            apple_1(2)
                     elif event.key == K_4:
-                        apple_1(2)
+                        if resposta_certa == respostas[3]:
+                            apple_1(1)
+                        else:
+                            apple_1(2)
                     else:
                         paused = 1
             elif points == 10:
@@ -349,13 +363,25 @@ while True:
                     exit()
                 if event.type == KEYDOWN:
                     if event.key == K_1:
-                        vel_snake(1)
+                        if resposta_certa == respostas[0]:
+                            vel_snake(1)
+                        else:
+                            vel_snake(2)
                     elif event.key == K_2:
-                        vel_snake(2)
+                        if resposta_certa == respostas[1]:
+                            vel_snake(1)
+                        else:
+                            vel_snake(2)
                     elif event.key == K_3:
-                        vel_snake(2)
+                        if resposta_certa == respostas[2]:
+                            vel_snake(1)
+                        else:
+                            vel_snake(2)
                     elif event.key == K_4:
-                        vel_snake(2)
+                        if resposta_certa == respostas[3]:
+                            vel_snake(1)
+                        else:
+                            vel_snake(2)
                     else:
                         paused = 1
             elif points == 15:
@@ -364,41 +390,82 @@ while True:
                     exit()
                 if event.type == KEYDOWN:
                     if event.key == K_1:
-                        awnser = 1
-                        paused = 0
-                        x_snake = int(width/2)
-                        y_snake = int(height/2)
-                        snake_lista = []
-                        head_list = []
-                        pygame.display.update()
-                        quiz_feito = True
+                        if resposta_certa == respostas[0]:
+                            answer = 1
+                            paused = 0
+                            x_snake = int(width/2)
+                            y_snake = int(height/2)
+                            snake_lista = []
+                            head_list = []
+                            pygame.display.update()
+                            quiz_feito = True
+                        else:
+                            answer = 2
+                            paused = 0
+                            x_snake = int(width/2)
+                            y_snake = int(height/2)
+                            snake_lista = []
+                            head_list = []
+                            pygame.display.update()
+                            quiz_feito = True
+
                     elif event.key == K_2:
-                        awnser = 2
-                        paused = 0
-                        x_snake = int(width/2)
-                        y_snake = int(height/2)
-                        snake_lista = []
-                        head_list = []
-                        pygame.display.update()
-                        quiz_feito = True
+                        if resposta_certa == respostas[1]:
+                            answer = 1
+                            paused = 0
+                            x_snake = int(width/2)
+                            y_snake = int(height/2)
+                            snake_lista = []
+                            head_list = []
+                            pygame.display.update()
+                            quiz_feito = True
+                        else:
+                            answer = 2
+                            paused = 0
+                            x_snake = int(width/2)
+                            y_snake = int(height/2)
+                            snake_lista = []
+                            head_list = []
+                            pygame.display.update()
+                            quiz_feito = True
                     elif event.key == K_3:
-                        awnser = 2
-                        paused = 0
-                        x_snake = int(width/2)
-                        y_snake = int(height/2)
-                        snake_lista = []
-                        head_list = []
-                        pygame.display.update()
-                        quiz_feito = True
+                        if resposta_certa == respostas[2]:
+                            answer = 1
+                            paused = 0
+                            x_snake = int(width/2)
+                            y_snake = int(height/2)
+                            snake_lista = []
+                            head_list = []
+                            pygame.display.update()
+                            quiz_feito = True
+                        else:
+                            answer = 2
+                            paused = 0
+                            x_snake = int(width/2)
+                            y_snake = int(height/2)
+                            snake_lista = []
+                            head_list = []
+                            pygame.display.update()
+                            quiz_feito = True
                     elif event.key == K_4:
-                        awnser = 2
-                        paused = 0
-                        x_snake = int(width/2)
-                        y_snake = int(height/2)
-                        snake_lista = []
-                        head_list = []
-                        pygame.display.update()
-                        quiz_feito = True
+                        if resposta_certa == respostas[3]:
+                            answer = 1
+                            paused = 0
+                            x_snake = int(width/2)
+                            y_snake = int(height/2)
+                            snake_lista = []
+                            head_list = []
+                            pygame.display.update()
+                            quiz_feito = True
+                        else:
+                            answer = 2
+                            paused = 0
+                            x_snake = int(width/2)
+                            y_snake = int(height/2)
+                            snake_lista = []
+                            head_list = []
+                            pygame.display.update()
+                            quiz_feito = True
                     else:
                         paused = 1
             elif points == 20:
@@ -408,55 +475,6 @@ while True:
                 
                 pygame.display.update()
                 
-    '''if paused == 1 and points == 10:
-        if not fazendo_quiz:
-            quiz = choice(quizes)
-            pergunta = quiz[0]
-            respostas = quiz[1]
-            fazendo_quiz = True
-        
-        text = font.render(pergunta, True, (0,0,0))
-        text_rect = text.get_rect()
-        text_rect.center = (width//2, height//2 - 200)
-        screen.blit(text, text_rect)
-
-        text_resposta_1 = font.render(respostas[0], True, (0,0,0))
-        text_resposta_2 = font.render(respostas[1], True, (0,0,0))
-        text_resposta_3 = font.render(respostas[2], True, (0,0,0))
-        text_resposta_4 = font.render(respostas[3], True, (0,0,0))
-        text_respostas_rect_1 = text_resposta_1.get_rect()
-        text_respostas_rect_2 = text_resposta_2.get_rect()
-        text_respostas_rect_3 = text_resposta_3.get_rect()
-        text_respostas_rect_4 = text_resposta_4.get_rect()
-        text_respostas_rect_1.center = (width//2, height//2 - 100)
-        text_respostas_rect_2.center = (width//2, height//2 - 50)
-        text_respostas_rect_3.center = (width//2, height//2)
-        text_respostas_rect_4.center = (width//2, height//2 + 50)
-        screen.blit(text_resposta_1, text_respostas_rect_1)
-        screen.blit(text_resposta_2, text_respostas_rect_2)
-        screen.blit(text_resposta_3, text_respostas_rect_3)
-        screen.blit(text_resposta_4, text_respostas_rect_4)
-
-    for event in pygame.event.get():
-        if event.type == QUIT:
-            pygame.quit()            
-            exit()
-        if event.type == KEYDOWN:
-            if event.key == K_1:
-                vel_snake(1)
-            elif event.key == K_2:
-                vel_snake(2)
-            elif event.key == K_3:
-                vel_snake(2)
-            elif event.key == K_4:
-                vel_snake(2)
-            else:
-                paused = 1
-    pygame.display.update()'''
-
-
-
-
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
@@ -525,26 +543,31 @@ while True:
         elif points >= 25:
             colors_double(3) 
         else:
-            if awnser == 1:
+            if answer == 1:
                 colors_double(1)
-            elif awnser == 2:
+            elif answer == 2:
                 colors_double(2)
         
-    if 25 > points >= 15 and awnser == 1:
-        msg_2 = f"Points = X2"
+    if 25 > points >= 15 and answer == 1:
+        msg_2 = f"Multiplicador: 2x"
         text_2 = font.render(msg_2, True,(0,0,0))
-        screen.blit(text_2, (width - 224, 80))
-    elif 25 > points >= 15 and awnser == 2:
-        msg_2 = f"Points = 1/2"
+        screen.blit(text_2, (width - 355, 80))
+    elif 25 > points >= 15 and answer == 2:
+        msg_2 = f"Multiplicador: 1/2x"
         text_2 = font.render(msg_2, True,(0,0,0))
-        screen.blit(text_2, (width - 224, 80))
-    
-        
-        
-        
+        screen.blit(text_2, (width - 355, 80))
             
     if points >= 15:
-        apple_green = pygame.draw.circle(screen,(0,255,0), (x_apple_green, y_apple_green), points*1.5, 0)
+        if not maca_verde_born:
+            d = 0
+            while d < 400:
+                x_apple_green = randint(40, 1200)
+                y_apple_green = randint(50, 700)
+                dx = x_snake - x_apple_green
+                dy = y_snake - y_apple_green
+                d = sqrt(dx**2 + dy**2)
+            maca_verde_born = True   
+        apple_green = pygame.draw.circle(screen,(0,200,0), (x_apple_green, y_apple_green), points*1.5, 0)
         if apple_green.colliderect(apple):
             x_y_apple()
         if apple_green.colliderect(snake):
@@ -557,6 +580,13 @@ while True:
                 x_y_apple()
         if x_apple_green == x_snake and y_apple_green == y_snake:
             x_y_apple()
+        dx = x_snake - x_apple_green
+        dy = y_snake - y_apple_green
+        rads = atan2(-dy,dx)
+        rads %= 2*pi
+        vel_apple_green = 5
+        x_apple_green += cos(rads) * vel_apple_green 
+        y_apple_green -= sin(rads) * vel_apple_green 
 
     if points >= 30:
         troll_apple = pygame.draw.circle(screen, (70, 41, 90), (x_troll_apple, y_troll_apple), 15, 0)
