@@ -60,7 +60,6 @@ font2 = pygame.font.SysFont('arial', 25, True, True)
 
 
 
-
 #valor inicial do contador
 points = 15
 quiz_feito = False
